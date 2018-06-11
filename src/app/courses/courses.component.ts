@@ -1,7 +1,8 @@
 import { Component, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
 import { CouchService } from '../shared/couchdb.service';
 import { DialogsPromptComponent } from '../shared/dialogs/dialogs-prompt.component';
-import { MatTableDataSource, MatSort, MatPaginator, MatFormField, MatFormFieldControl, MatDialog, PageEvent } from '@angular/material';
+import { MatTableDataSource, MatSort, MatPaginator, MatFormField, MatFormFieldControl,
+  MatDialog, MatDialogRef, PageEvent } from '@angular/material';
 import { PlanetMessageService } from '../shared/planet-message.service';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SelectionModel } from '@angular/cdk/collections';
@@ -13,6 +14,8 @@ import { switchMap, catchError, map, takeUntil } from 'rxjs/operators';
 import { filterDropdowns, filterSpecificFields, composeFilterFunctions } from '../shared/table-helpers';
 import * as constants from './constants';
 import { debug } from '../debug-operator';
+import { DialogsListService } from '../shared/dialogs/dialogs-list.service';
+import { DialogsListComponent } from '../shared/dialogs/dialogs-list.component';
 
 @Component({
   templateUrl: './courses.component.html',
@@ -32,6 +35,7 @@ export class CoursesComponent implements OnInit, AfterViewInit {
   courses = new MatTableDataSource();
   @ViewChild(MatSort) sort: MatSort;
   @ViewChild(MatPaginator) paginator: MatPaginator;
+  dialogRef: MatDialogRef<DialogsListComponent>;
   message = '';
   deleteDialog: any;
   fb: FormBuilder;
@@ -59,6 +63,7 @@ export class CoursesComponent implements OnInit, AfterViewInit {
   constructor(
     private couchService: CouchService,
     private dialog: MatDialog,
+    private dialogsListService: DialogsListService,
     private planetMessageService: PlanetMessageService,
     private router: Router,
     private route: ActivatedRoute,
@@ -249,6 +254,34 @@ export class CoursesComponent implements OnInit, AfterViewInit {
     const userShelf: any = { courseIds: [ ...this.userShelf.courseIds ], ...this.userShelf };
     userShelf.courseIds.push(courseId);
     this.updateShelf(userShelf, 'Course added to your dashboard');
+  }
+
+  sendCourse() {
+    this.dialogsListService.getListAndColumns('communityregistrationrequests', { 'registrationRequest': 'accepted' })
+    .subscribe((planet) => {
+      const data = { okClick: this.dialogOkClick('communityregistrationrequests').bind(this),
+        filterPredicate: filterSpecificFields([ 'name' ]),
+        allowMulti: false,
+        ...planet };
+      this.dialogRef = this.dialog.open(DialogsListComponent, {
+        data: data,
+        height: '500px',
+        width: '600px',
+        autoFocus: false
+      });
+    });
+  }
+
+  dialogOkClick(db: string) {
+    return (selected: any) => {
+      const obs = [];
+      const coursesToSend = this.selection.selected;
+      coursesToSend.map(item => {
+        obs.push(this.couchService.post('send_items', { type: 'course', sendTo: selected[0].code, item: item }));
+      });
+      forkJoin(obs).subscribe();
+      this.dialogRef.close();
+    };
   }
 
 }

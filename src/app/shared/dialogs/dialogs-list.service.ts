@@ -5,7 +5,8 @@ import { findDocuments } from '../mangoQueries';
 
 const listColumns = {
   'resources': [ 'title' ],
-  '_users': [ 'name' ]
+  '_users': [ 'name' ],
+  'communityregistrationrequests': [ 'name' ]
 };
 
 @Injectable()
