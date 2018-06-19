@@ -90,7 +90,11 @@ export class ResourcesAddComponent implements OnInit {
       addedBy: '',
       openUrl: [],
       openWhichFile: '',
-      isDownloadable: ''
+      isDownloadable: '',
+      sourcePlanet: this.userService.getConfig().code,
+      resideOn:  this.userService.getConfig().code,
+      createdDate: Date.now(),
+      updatedDate: Date.now()
     });
   }
 
@@ -176,7 +180,7 @@ export class ResourcesAddComponent implements OnInit {
   }
 
   updateResource(resourceInfo) {
-    this.couchService.put(this.dbName + '/' + resourceInfo._id, { ...resourceInfo }).subscribe(() => {
+    this.couchService.put(this.dbName + '/' + resourceInfo._id, { ...resourceInfo, updatedDate: Date.now() }).subscribe(() => {
       this.router.navigate([ '/resources' ]);
       this.planetMessageService.showMessage('Resource Updated Successfully');
     }, (err) => {
